@@ -384,7 +384,7 @@ json get_json_entry(MAT::Node* n, std::map<std::string,std::map<std::string,std:
     }
     std::map<std::string,std::vector<std::string>> nmap {{"nuc", mutids},};
     //mutation information is encoded twice in the output we're using. 
-    //don't ask me why. 
+    //'tdon't ask me why. 
     std::map<std::string,std::string> mutv {{"nuc mutations", muts}};
     sj["branch_attrs"] = {{"labels",mutv}, {"mutations",nmap}};
     //note: the below is pretty much sars-cov-2 specific. but so is all json-related things.
@@ -408,7 +408,8 @@ json get_json_entry(MAT::Node* n, std::map<std::string,std::map<std::string,std:
     std::string date = n->identifier.substr( n->identifier.find_last_of("|")+1, n->identifier.size() );
     std::map<std::string,std::string> com {{"value",country}};
     std::map<std::string,std::string> dam {{"value",date}};
-    if (n->is_leaf()) {
+    // added to assure that this parsed the date and country correctly otherwise, don't print them. 
+    if (n->is_leaf() && country.length() != n->identifier.size() && date.length() != n->identifier.size() ) {
         sj["node_attrs"] = { {"country",com}, {"date",dam} ,{"div", div}, {"MAT_Clade_0", c1a}, {"MAT_Clade_1", c2a} };
     } else {
         sj["node_attrs"] = {{"div", div}, {"MAT_Clade_0", c1a}, {"MAT_Clade_1", c2a} };
