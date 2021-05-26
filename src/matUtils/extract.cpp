@@ -237,7 +237,7 @@ void extract_main (po::parsed_options parsed) {
             auto msamples = get_mutation_samples(T, mname);
             if (msamples.size() == 0) {
                 fprintf(stderr, "WARNING: No samples with mutation %s found in tree!\n", mname.c_str());
-            }
+           
             samples_with_mutation.insert(samples_with_mutation.end(), msamples.begin(), msamples.end());
         }
         //remove duplicate samples
@@ -330,20 +330,27 @@ void extract_main (po::parsed_options parsed) {
         auto batch_samples = read_sample_names(sample_file);
         timer.Start();
         // size_t counter = 0;
-        for (auto s: batch_samples) {
+        static tbb::affinity_partitioner ap;
+       size_t num_desc = 0;
+
+       tbb::parallel_for(tbb::blocked_range<size_t>(0, batch_samples.size() ),
+                      [&](const tbb::blocked_range<size_t> r) {
+
+       for (int s = r.begin() ; s < r.end() ; ++s ) {
             std::map<std::string,std::string> conmap;
-            conmap[s] = "focal";
+            conmap[batch_samples[s]] = "focal";
             catmeta["focal_view"] = conmap;
-            auto cs = get_nearby(T, s, nk);
+            auto cs = get_nearby(&T, batch_samples[s], nk);
             MAT::Tree subt = filter_master(T, cs, false);
             //remove forward slashes from the string, replacing them with underscores.
             size_t pos = 0;
-            while ((pos = s.find("/")) != std::string::npos) {
-                s.replace(pos, 1, "_");
+            while ((pos = batch_samples[s].find("/")) != std::string::npos) {
+                batch_samples[s].replace(pos, 1, "_");
             }
             //fprintf(stderr, "DEBUG: writing file %s\n", (std::to_string(counter) + "_context.json").c_str());
-            write_json_from_mat(&subt, s + "_context.json", catmeta);
+            write_json_from_mat(&subt, batch_samples[s] + "_context.json", &catmeta);
             // counter++;
+        }) ; 
         }
         fprintf(stderr, "%ld batch sample jsons written in %ld msec.\n", batch_samples.size(), timer.Stop());
 
